@@ -13,7 +13,9 @@
         
         #game-screen { display: none; }
         
-        /* 問題文エリア：横並びを維持し、幅に合わせてフォントを調整 */
+        /* 進捗表示エリアを追加 */
+        #progress-display { font-size: 1rem; font-weight: bold; margin-bottom: 5px; color: #555; }
+
         .question-header { 
             display: flex; align-items: center; justify-content: space-between; 
             margin-bottom: 10px; height: 80px; width: 100%;
@@ -26,7 +28,6 @@
         }
         .target-char { border-bottom: 3px solid #333; min-width: 40px; display: inline-block; text-align: center; margin: 0 5px; padding-bottom: 2px; }
         
-        /* 表示エリア：分離して高さ固定 */
         .display-container { display: flex; flex-direction: column; height: 80px; margin-bottom: 10px; }
         #answer-display, #hint-display { height: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #answer-display { color: #d32f2f; } #hint-display { color: #388e3c; }
@@ -47,6 +48,8 @@
     </div>
 
     <div id="game-screen">
+        <div id="progress-display"></div>
+        
         <div class="question-header">
             <button id="prev-btn" class="game-btn" onclick="prevQuestion()">戻る</button>
             <div id="question-text-area"></div>
@@ -75,23 +78,12 @@
     </div>
 </div>
 
-<div id="modal">
-    <div class="modal-content">
-        <h3>回答一覧</h3>
-        <div id="solved-list" style="text-align: left; max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
-        <button onclick="resetSolved()" style="background-color: #f44336; color: white;">全リセット</button>
-        <button onclick="closeModal()">閉じる</button>
-    </div>
-</div>
-
 <script>
     let allData = {}, currentSheet = "", questions = [], history = [], currentIndex = 0;
     let solvedIndices = new Set(), seenIndices = new Set();
     
-    // 横並び用：文字数に応じてフォントサイズを縮小する関数
     function adjustFontSize(elementId, textLength) {
         const el = document.getElementById(elementId);
-        // 文字数が多いほど小さくする（最小14px）
         let size = Math.max(14, 32 - (textLength * 0.8));
         el.style.fontSize = size + 'px';
     }
@@ -123,22 +115,33 @@
         currentIndex = idx; seenIndices.add(idx); saveProgress();
         const q = questions[idx];
         const container = document.getElementById('question-text-area');
-        // 横並びで構築
         container.innerHTML = `<span>${q.p1}</span><span class="target-char">${q.prob}</span><span>${q.p2}</span>`;
         adjustFontSize('question-text-area', (q.p1 + q.prob + q.p2).length);
         
+        // 進捗の更新
+        document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`;
         document.getElementById('prev-btn').disabled = (history.length <= 1);
         clearCanvas(); document.getElementById('answer-display').innerText = ""; document.getElementById('hint-display').innerText = "";
     }
 
-    // 他の関数はそのまま
-    function loadQuestion() { let available = questions.map((_, i) => i).filter(i => !solvedIndices.has(i)); if (available.length === 0) { document.getElementById('question-text-area').innerText = "全問制覇！"; return; } let nextIdx = available[Math.floor(Math.random() * available.length)]; history.push(nextIdx); renderQuestion(nextIdx); }
+    function loadQuestion() { 
+        let available = questions.map((_, i) => i).filter(i => !solvedIndices.has(i)); 
+        if (available.length === 0) { 
+            document.getElementById('question-text-area').innerText = "全問制覇！"; 
+            document.getElementById('progress-display').innerText = `正解数: ${questions.length} / ${questions.length} 問`;
+            return; 
+        } 
+        let nextIdx = available[Math.floor(Math.random() * available.length)]; 
+        history.push(nextIdx); 
+        renderQuestion(nextIdx); 
+    }
+    
     function prevQuestion() { if (history.length > 1) { history.pop(); renderQuestion(history[history.length - 1]); } }
     function saveProgress() { localStorage.setItem('solved_' + currentSheet, JSON.stringify([...solvedIndices])); localStorage.setItem('seen_' + currentSheet, JSON.stringify([...seenIndices])); }
     function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
     function markAsSolved() { solvedIndices.add(currentIndex); saveProgress(); loadQuestion(); }
     function openModal() { const list = document.getElementById('solved-list'); list.innerHTML = ""; questions.forEach((q, i) => { if(seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i)?"checked":""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}<span style="color:red; font-weight:bold;">${q.prob}</span>${q.p2}</div>`; } }); document.getElementById('modal').style.display = 'block'; }
-    function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); }
+    function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); history=[]; saveProgress(); closeModal(); loadQuestion(); } }
     function showAnswer() { const el = document.getElementById('answer-display'); el.innerText = el.innerText ? "" : "答え: " + questions[currentIndex].a; }
