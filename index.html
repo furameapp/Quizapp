@@ -6,14 +6,34 @@
     <style>
         body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 20px; }
         .container { background: white; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 650px; }
-        .canvas-container { position: relative; width: 600px; height: 150px; margin: 20px auto; border: 2px solid #ccc; background: #fff; touch-action: none; }
+        
+        .menu-btn { display: block; width: 80%; margin: 10px auto; padding: 15px; font-size: 1.2rem; cursor: pointer; border-radius: 10px; border: none; background: #607D8B; color: white; }
+        .game-btn { font-size: 1.1rem; padding: 8px 15px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background-color: #eee; width: 85px; flex-shrink: 0; }
+        .game-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        #game-screen { display: none; }
+        
+        /* 問題文エリア：横並びを維持し、幅に合わせてフォントを調整 */
+        .question-header { 
+            display: flex; align-items: center; justify-content: space-between; 
+            margin-bottom: 10px; height: 80px; width: 100%;
+        }
+        #question-text-area { 
+            font-weight: bold; margin: 0 10px; 
+            flex-grow: 1; flex-shrink: 1; min-width: 0;
+            display: flex; align-items: center; justify-content: center; 
+            white-space: nowrap; overflow: hidden;
+        }
+        .target-char { border-bottom: 3px solid #333; min-width: 40px; display: inline-block; text-align: center; margin: 0 5px; padding-bottom: 2px; }
+        
+        /* 表示エリア：分離して高さ固定 */
+        .display-container { display: flex; flex-direction: column; height: 80px; margin-bottom: 10px; }
+        #answer-display, #hint-display { height: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #answer-display { color: #d32f2f; } #hint-display { color: #388e3c; }
+
+        .canvas-container { position: relative; width: 600px; height: 150px; margin: 10px auto; border: 2px solid #ccc; background: #fff; touch-action: none; }
         #canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; }
-        #question-text { font-size: 1.8rem; margin-bottom: 20px; font-weight: bold; }
-        #answer-display, #hint-display { font-size: 1.5rem; margin: 10px 0; min-height: 2rem; font-weight: bold; }
-        #answer-display { color: #d32f2f; }
-        #hint-display { color: #388e3c; }
-        button { font-size: 1.1rem; padding: 8px 15px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; }
-        .blank { border-bottom: 3px solid #333; display: inline-block; min-width: 40px; text-align: center; margin: 0 5px; padding-bottom: 2px; font-weight: bold; }
+        
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; overflow-y: auto; }
         .modal-content { background: white; margin: 50px auto; padding: 20px; width: 80%; max-width: 500px; border-radius: 10px; }
     </style>
@@ -21,25 +41,37 @@
 <body>
 
 <div class="container">
-    <div id="question-text">読み込み中...</div>
-    <div class="canvas-container">
-        <canvas id="canvas" width="600" height="150"></canvas>
+    <div id="menu-screen">
+        <h1>メニュー</h1>
+        <div id="sheet-list">読み込み中...</div>
     </div>
-    
-    <div id="answer-display"></div>
-    <div id="hint-display"></div>
-    
-    <div>
-        <button onclick="markAsSolved()" style="background-color: #4CAF50; color: white;">正解！</button>
-        <button onclick="showAnswer()">答え</button>
-        <button onclick="showHint()">ヒント</button>
-        <button onclick="clearCanvas()">消す</button>
-        <button onclick="nextQuestion()">次へ</button>
-        <button onclick="openModal()" style="background-color: #2196F3; color: white;">回答一覧</button>
-    </div>
-    <div style="margin-top: 15px;">
-        <label>ペンの太さ: </label>
-        <input type="range" id="pen-size" min="2" max="20" value="6" oninput="updatePenSize(this.value)">
+
+    <div id="game-screen">
+        <div class="question-header">
+            <button id="prev-btn" class="game-btn" onclick="prevQuestion()">戻る</button>
+            <div id="question-text-area"></div>
+            <button class="game-btn" onclick="loadQuestion()">次へ</button>
+        </div>
+        
+        <div class="canvas-container"><canvas id="canvas" width="600" height="150"></canvas></div>
+        
+        <div class="display-container">
+            <div id="answer-display"></div>
+            <div id="hint-display"></div>
+        </div>
+        
+        <div>
+            <button class="game-btn" onclick="markAsSolved()" style="background-color: #4CAF50; color: white; width: auto;">正解！</button>
+            <button class="game-btn" onclick="showAnswer()" style="width: auto;">答え</button>
+            <button class="game-btn" onclick="showHint()" style="width: auto;">ヒント</button>
+            <button class="game-btn" onclick="clearCanvas()" style="width: auto;">消す</button>
+            <button class="game-btn" onclick="openModal()" style="background-color: #2196F3; color: white; width: auto;">一覧</button>
+        </div>
+        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center;">
+            <label>ペンの太さ: </label>
+            <input type="range" id="pen-size" min="2" max="20" value="6" oninput="updatePenSize(this.value)" style="margin: 0 10px;">
+            <button class="game-btn" onclick="backToMenu()" style="width: auto; background-color: #607D8B; color: white;">メニューへ</button>
+        </div>
     </div>
 </div>
 
@@ -53,119 +85,71 @@
 </div>
 
 <script>
-    let questions = [];
-    let currentIndex = 0;
-    let solvedIndices = new Set();
-    let seenIndices = new Set();
-    let isAnswerVisible = false;
-    let isHintVisible = false;
+    let allData = {}, currentSheet = "", questions = [], history = [], currentIndex = 0;
+    let solvedIndices = new Set(), seenIndices = new Set();
     
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const qText = document.getElementById('question-text');
-    const aDisplay = document.getElementById('answer-display');
-    const hDisplay = document.getElementById('hint-display');
-    const penSizeInput = document.getElementById('pen-size');
-
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#333';
-    let drawing = false;
-
-    const savedPenSize = localStorage.getItem('penSize') || 6;
-    ctx.lineWidth = Number(savedPenSize);
-    penSizeInput.value = savedPenSize;
-
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
+    // 横並び用：文字数に応じてフォントサイズを縮小する関数
+    function adjustFontSize(elementId, textLength) {
+        const el = document.getElementById(elementId);
+        // 文字数が多いほど小さくする（最小14px）
+        let size = Math.max(14, 32 - (textLength * 0.8));
+        el.style.fontSize = size + 'px';
     }
 
-    canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); };
-    canvas.onmousemove = (e) => { if(drawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); } };
-    canvas.onmouseup = () => drawing = false;
-    canvas.ontouchstart = (e) => { drawing = true; ctx.beginPath(); e.preventDefault(); };
-    canvas.ontouchmove = (e) => { if(drawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); } };
-    canvas.ontouchend = () => drawing = false;
-
-    async function loadCSV() {
+    async function loadAllData() {
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec';
         try {
-            const response = await fetch(webAppUrl);
-            const data = await response.text();
-            const rows = data.split('\n').filter(r => r.trim() !== "").slice(1);
-            questions = rows.map(r => { const c = r.split(','); return { p1: c[1], prob: c[2], p2: c[3], a: c[4].trim(), hint: c[5] ? c[5].trim() : "なし" }; });
-            
-            const savedSolved = localStorage.getItem('solvedIndices');
-            if (savedSolved) solvedIndices = new Set(JSON.parse(savedSolved));
-            const savedSeen = localStorage.getItem('seenIndices');
-            if (savedSeen) seenIndices = new Set(JSON.parse(savedSeen));
-            
-            loadQuestion();
-        } catch (e) { qText.innerText = "読み込みエラー"; }
+            const res = await fetch(webAppUrl);
+            allData = await res.json();
+            const list = document.getElementById('sheet-list');
+            Object.keys(allData).forEach(s => {
+                list.innerHTML += `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`;
+            });
+        } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; }
     }
 
-    function loadQuestion() {
-        let available = questions.map((_, i) => i).filter(i => !solvedIndices.has(i));
-        if (available.length === 0) { 
-            qText.innerText = "全問制覇！おめでとう！"; 
-            aDisplay.innerText = ""; hDisplay.innerText = "";
-            return; 
-        }
-        isAnswerVisible = false; isHintVisible = false;
-        currentIndex = available[Math.floor(Math.random() * available.length)];
+    function startPractice(s) {
+        currentSheet = s;
+        questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] || "なし" }));
+        solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]"));
+        seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]"));
+        history = []; 
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        loadQuestion();
+    }
+
+    function renderQuestion(idx) {
+        currentIndex = idx; seenIndices.add(idx); saveProgress();
+        const q = questions[idx];
+        const container = document.getElementById('question-text-area');
+        // 横並びで構築
+        container.innerHTML = `<span>${q.p1}</span><span class="target-char">${q.prob}</span><span>${q.p2}</span>`;
+        adjustFontSize('question-text-area', (q.p1 + q.prob + q.p2).length);
         
-        seenIndices.add(currentIndex);
-        localStorage.setItem('seenIndices', JSON.stringify([...seenIndices]));
-
-        const q = questions[currentIndex];
-        qText.innerHTML = `<div style="font-size: 0.9rem; color: #666;">${solvedIndices.size}問正解 / 全${questions.length}問中</div>${q.p1}<span class="blank">${q.prob}</span>${q.p2}`;
-        clearCanvas(); aDisplay.innerText = ""; hDisplay.innerText = "";
+        document.getElementById('prev-btn').disabled = (history.length <= 1);
+        clearCanvas(); document.getElementById('answer-display').innerText = ""; document.getElementById('hint-display').innerText = "";
     }
 
-    function markAsSolved() { solvedIndices.add(currentIndex); saveAndLoad(); }
-    function nextQuestion() { loadQuestion(); }
-    function saveAndLoad() { 
-        localStorage.setItem('solvedIndices', JSON.stringify([...solvedIndices])); 
-        loadQuestion(); 
-    }
-    
-    function openModal() {
-        const list = document.getElementById('solved-list'); list.innerHTML = "";
-        questions.forEach((q, i) => { 
-            if(seenIndices.has(i)) {
-                const checked = solvedIndices.has(i) ? "checked" : "";
-                // 答え(漢字)ではなく、ひらがな(prob)を赤字で表示
-                const fullSentence = `${q.p1}<span style="color:red; font-weight:bold;">${q.prob}</span>${q.p2}`;
-                list.innerHTML += `<div style="margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                    <input type="checkbox" ${checked} onchange="toggleSolved(${i}, this.checked)"> ${fullSentence}</div>`;
-            }
-        });
-        document.getElementById('modal').style.display = 'block';
-    }
-    
-    function toggleSolved(i, isChecked) {
-        if (isChecked) solvedIndices.add(i);
-        else solvedIndices.delete(i);
-        saveAndLoad();
-    }
-    
+    // 他の関数はそのまま
+    function loadQuestion() { let available = questions.map((_, i) => i).filter(i => !solvedIndices.has(i)); if (available.length === 0) { document.getElementById('question-text-area').innerText = "全問制覇！"; return; } let nextIdx = available[Math.floor(Math.random() * available.length)]; history.push(nextIdx); renderQuestion(nextIdx); }
+    function prevQuestion() { if (history.length > 1) { history.pop(); renderQuestion(history[history.length - 1]); } }
+    function saveProgress() { localStorage.setItem('solved_' + currentSheet, JSON.stringify([...solvedIndices])); localStorage.setItem('seen_' + currentSheet, JSON.stringify([...seenIndices])); }
+    function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
+    function markAsSolved() { solvedIndices.add(currentIndex); saveProgress(); loadQuestion(); }
+    function openModal() { const list = document.getElementById('solved-list'); list.innerHTML = ""; questions.forEach((q, i) => { if(seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i)?"checked":""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}<span style="color:red; font-weight:bold;">${q.prob}</span>${q.p2}</div>`; } }); document.getElementById('modal').style.display = 'block'; }
+    function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function resetSolved() { 
-        if(confirm("全リセットして最初から始めますか？")) { 
-            solvedIndices.clear(); seenIndices.clear();
-            localStorage.removeItem('solvedIndices');
-            localStorage.removeItem('seenIndices');
-            loadQuestion(); closeModal(); 
-        } 
-    }
+    function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); history=[]; saveProgress(); closeModal(); loadQuestion(); } }
+    function showAnswer() { const el = document.getElementById('answer-display'); el.innerText = el.innerText ? "" : "答え: " + questions[currentIndex].a; }
+    function showHint() { const el = document.getElementById('hint-display'); el.innerText = el.innerText ? "" : "ヒント: " + questions[currentIndex].hint; }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    function showAnswer() { isAnswerVisible = !isAnswerVisible; aDisplay.innerText = isAnswerVisible ? "答え: " + questions[currentIndex].a : ""; }
-    function showHint() { isHintVisible = !isHintVisible; hDisplay.innerText = isHintVisible ? "ヒント: " + questions[currentIndex].hint : ""; }
-    function updatePenSize(s) { const val = Number(s); ctx.lineWidth = val; localStorage.setItem('penSize', val); }
+    function updatePenSize(s) { ctx.lineWidth = Number(s); localStorage.setItem('penSize', s); }
 
-    loadCSV();
+    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round'; ctx.strokeStyle = '#333'; ctx.lineWidth = Number(localStorage.getItem('penSize') || 6);
+    let drawing = false; canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); }; canvas.onmousemove = (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); ctx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); ctx.stroke(); } }; canvas.onmouseup = () => drawing = false;
+    loadAllData();
 </script>
 </body>
 </html>
