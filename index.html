@@ -89,7 +89,17 @@
 <script>
     let allData = {}, currentSheet = "", questions = [], history = [], currentIndex = 0;
     let solvedIndices = new Set(), seenIndices = new Set();
+    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     
+    // ペンの太さ初期化ロジック
+    function initPen() {
+        const savedSize = localStorage.getItem('penSize') || 6;
+        document.getElementById('pen-size').value = savedSize;
+        ctx.lineWidth = Number(savedSize);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#333';
+    }
+
     function adjustFontSize(elementId, textLength) {
         const el = document.getElementById(elementId);
         let size = Math.max(14, 32 - (textLength * 0.8));
@@ -102,16 +112,11 @@
         try {
             const res = await fetch(webAppUrl);
             allData = await res.json();
-            
-            // 読み込み中表示をクリア
             list.innerHTML = "";
-            
             Object.keys(allData).forEach(s => {
                 list.innerHTML += `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`;
             });
-        } catch(e) { 
-            list.innerText = "読み込みエラー"; 
-        }
+        } catch(e) { list.innerText = "読み込みエラー"; }
     }
 
     function startPractice(s) {
@@ -122,6 +127,7 @@
         history = []; 
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
+        initPen(); // 練習開始時に太さを再反映
         loadQuestion();
     }
 
@@ -161,9 +167,9 @@
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
     function updatePenSize(s) { ctx.lineWidth = Number(s); localStorage.setItem('penSize', s); }
 
-    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round'; ctx.strokeStyle = '#333'; ctx.lineWidth = Number(localStorage.getItem('penSize') || 6);
     let drawing = false; canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); }; canvas.onmousemove = (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); ctx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); ctx.stroke(); } }; canvas.onmouseup = () => drawing = false;
+    
+    initPen();
     loadAllData();
 </script>
 </body>
