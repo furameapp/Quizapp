@@ -91,7 +91,6 @@
     let solvedIndices = new Set(), seenIndices = new Set();
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     
-    // ペンの太さ初期化ロジック
     function initPen() {
         const savedSize = localStorage.getItem('penSize') || 6;
         document.getElementById('pen-size').value = savedSize;
@@ -127,7 +126,7 @@
         history = []; 
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
-        initPen(); // 練習開始時に太さを再反映
+        initPen();
         loadQuestion();
     }
 
@@ -135,7 +134,11 @@
         currentIndex = idx; seenIndices.add(idx); saveProgress();
         const q = questions[idx];
         const container = document.getElementById('question-text-area');
-        container.innerHTML = `<span>${q.p1}</span><span class="target-char">${q.prob}</span><span>${q.p2}</span>`;
+        
+        // 問題部分(prob)が空白の場合、下線クラスを適用しない
+        const probSpan = q.prob.trim() ? `<span class="target-char">${q.prob}</span>` : `<span>${q.prob}</span>`;
+        container.innerHTML = `<span>${q.p1}</span>${probSpan}<span>${q.p2}</span>`;
+        
         adjustFontSize('question-text-area', (q.p1 + q.prob + q.p2).length);
         document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`;
         document.getElementById('prev-btn').disabled = (history.length <= 1);
@@ -158,7 +161,7 @@
     function saveProgress() { localStorage.setItem('solved_' + currentSheet, JSON.stringify([...solvedIndices])); localStorage.setItem('seen_' + currentSheet, JSON.stringify([...seenIndices])); }
     function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
     function markAsSolved() { solvedIndices.add(currentIndex); saveProgress(); loadQuestion(); }
-    function openModal() { const list = document.getElementById('solved-list'); list.innerHTML = ""; questions.forEach((q, i) => { if(seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i)?"checked":""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}<span style="color:red; font-weight:bold;">${q.prob}</span>${q.p2}</div>`; } }); document.getElementById('modal').style.display = 'block'; }
+    function openModal() { const list = document.getElementById('solved-list'); list.innerHTML = ""; questions.forEach((q, i) => { if(seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i)?"checked":""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}${q.prob}${q.p2}</div>`; } }); document.getElementById('modal').style.display = 'block'; }
     function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); history=[]; saveProgress(); closeModal(); loadQuestion(); } }
