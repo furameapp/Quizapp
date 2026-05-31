@@ -5,42 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>漢字練習アプリ</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 650px; }
-        
-        .menu-btn { display: block; width: 80%; margin: 10px auto; padding: 15px; font-size: 1.2rem; cursor: pointer; border-radius: 10px; border: none; background: #607D8B; color: white; }
-        .game-btn { font-size: 1.1rem; padding: 8px 15px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background-color: #eee; width: 85px; flex-shrink: 0; z-index: 5; position: relative; }
+        body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 10px; margin: 0; }
+        .container { 
+            background: white; padding: 20px; border-radius: 15px; 
+            display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            width: 100%; max-width: 600px; box-sizing: border-box;
+        }
+        .menu-btn { display: block; width: 90%; margin: 10px auto; padding: 15px; font-size: 1.2rem; cursor: pointer; border-radius: 10px; border: none; background: #607D8B; color: white; }
+        .game-btn { font-size: 1rem; padding: 10px 15px; cursor: pointer; margin: 3px; border-radius: 5px; border: none; background-color: #eee; flex-shrink: 0; z-index: 5; position: relative; }
         .game-btn:disabled { background-color: #ccc; cursor: not-allowed; }
         
         #game-screen { display: none; }
-        
-        #progress-display { font-size: 1rem; font-weight: bold; margin-bottom: 5px; color: #555; height: 20px; }
+        #progress-display { font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: #555; height: 20px; }
 
-        .question-header { 
-            display: flex; align-items: center; justify-content: space-between; 
-            margin-bottom: 10px; height: 80px; width: 100%;
-        }
-        #question-text-area { 
-            font-weight: bold; margin: 0 10px; 
-            flex-grow: 1; flex-shrink: 1; min-width: 0;
-            display: flex; align-items: center; justify-content: center; 
-            white-space: nowrap; overflow: hidden;
-        }
+        .question-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; height: 60px; }
+        #question-text-area { font-weight: bold; flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }
         .target-char { border-bottom: 3px solid #333; min-width: 40px; display: inline-block; text-align: center; margin: 0 5px; padding-bottom: 2px; }
         
-        .display-container { display: flex; flex-direction: column; height: 80px; margin-bottom: 10px; }
-        #answer-display, #hint-display { height: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #answer-display { color: #d32f2f; } #hint-display { color: #388e3c; }
+        .display-container { height: 60px; margin-bottom: 10px; display: flex; flex-direction: column; justify-content: center; }
+        #answer-display { color: #d32f2f; font-weight: bold; }
+        #hint-display { color: #388e3c; font-weight: bold; }
 
         .canvas-container { 
-            position: relative; width: 600px; height: 150px; margin: 10px auto; 
-            border: 2px solid #ccc; background: #fff; 
-            touch-action: none; -webkit-user-select: none; user-select: none;
+            position: relative; width: 100%; height: 150px; 
+            margin: 10px auto; border: 2px solid #ccc; background: #fff; 
+            touch-action: none; overflow: hidden;
         }
-        #canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; }
+        #canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
         
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; overflow-y: auto; }
-        .modal-content { background: white; margin: 50px auto; padding: 20px; width: 80%; max-width: 500px; border-radius: 10px; position: relative; }
+        .modal-content { background: white; margin: 50px auto; padding: 20px; width: 90%; max-width: 500px; border-radius: 10px; position: relative; }
     </style>
 </head>
 <body>
@@ -53,31 +47,27 @@
 
     <div id="game-screen">
         <div id="progress-display"></div>
-        
         <div class="question-header">
             <button id="prev-btn" class="game-btn" onclick="prevQuestion()">戻る</button>
             <div id="question-text-area"></div>
             <button class="game-btn" onclick="loadQuestion()">次へ</button>
         </div>
-        
         <div class="canvas-container"><canvas id="canvas" width="600" height="150"></canvas></div>
-        
         <div class="display-container">
             <div id="answer-display"></div>
             <div id="hint-display"></div>
         </div>
-        
-        <div style="z-index: 10; position: relative;">
-            <button class="game-btn" onclick="markAsSolved()" style="background-color: #4CAF50; color: white; width: auto;">正解！</button>
-            <button class="game-btn" onclick="showAnswer()" style="width: auto;">答え</button>
-            <button class="game-btn" onclick="showHint()" style="width: auto;">ヒント</button>
-            <button class="game-btn" onclick="clearCanvas()" style="width: auto;">消す</button>
-            <button class="game-btn" onclick="openModal()" style="background-color: #2196F3; color: white; width: auto;">一覧</button>
+        <div>
+            <button class="game-btn" onclick="markAsSolved()" style="background:#4CAF50; color:white;">正解！</button>
+            <button class="game-btn" onclick="showAnswer()">答え</button>
+            <button class="game-btn" onclick="showHint()">ヒント</button>
+            <button class="game-btn" onclick="clearCanvas()">消す</button>
+            <button class="game-btn" onclick="openModal()" style="background:#2196F3; color:white;">一覧</button>
         </div>
-        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center;">
-            <label>ペンの太さ: </label>
-            <input type="range" id="pen-size" min="2" max="20" value="6" oninput="updatePenSize(this.value)" style="margin: 0 10px;">
-            <button class="game-btn" onclick="backToMenu()" style="width: auto; background-color: #607D8B; color: white;">メニューへ</button>
+        <div style="margin-top: 15px;">
+            <label style="font-size: 0.9rem;">ペンの太さ:</label>
+            <input type="range" id="pen-size" min="2" max="20" value="6" oninput="updatePenSize(this.value)" style="vertical-align: middle;">
+            <button class="game-btn" onclick="backToMenu()" style="background:#607D8B; color:white;">メニューへ</button>
         </div>
     </div>
 </div>
@@ -86,8 +76,8 @@
     <div class="modal-content">
         <h3>回答一覧</h3>
         <div id="solved-list" style="text-align: left; max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
-        <button onclick="resetSolved()" style="background-color: #f44336; color: white; padding: 10px;">全リセット</button>
-        <button onclick="closeModal()" style="padding: 10px;">閉じる</button>
+        <button onclick="resetSolved()" style="background:#f44336; color:white; padding:10px;">全リセット</button>
+        <button onclick="closeModal()" style="padding:10px;">閉じる</button>
     </div>
 </div>
 
@@ -100,15 +90,25 @@
         const savedSize = localStorage.getItem('penSize') || 6;
         document.getElementById('pen-size').value = savedSize;
         ctx.lineWidth = Number(savedSize);
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#333';
+        ctx.lineCap = 'round'; ctx.strokeStyle = '#333';
     }
 
-    function adjustFontSize(elementId, textLength) {
-        const el = document.getElementById(elementId);
-        let size = Math.max(14, 32 - (textLength * 0.8));
-        el.style.fontSize = size + 'px';
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
     }
+
+    let drawing = false;
+    canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); });
+    canvas.addEventListener('mousemove', (e) => { if(drawing) { const pos = getPointerPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); }, {passive: false});
+    canvas.addEventListener('touchmove', (e) => { if(drawing) { e.preventDefault(); const pos = getPointerPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } }, {passive: false});
+    canvas.addEventListener('touchend', () => drawing = false);
 
     async function loadAllData() {
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec';
@@ -128,11 +128,9 @@
         questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] || "なし" }));
         solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]"));
         seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]"));
-        history = []; 
-        document.getElementById('menu-screen').style.display = 'none';
+        history = []; document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
-        initPen();
-        loadQuestion();
+        initPen(); loadQuestion();
     }
 
     function renderQuestion(idx) {
@@ -141,7 +139,6 @@
         const container = document.getElementById('question-text-area');
         const probSpan = q.prob.trim() ? `<span class="target-char">${q.prob}</span>` : `<span>${q.prob}</span>`;
         container.innerHTML = `<span>${q.p1}</span>${probSpan}<span>${q.p2}</span>`;
-        adjustFontSize('question-text-area', (q.p1 + q.prob + q.p2).length);
         document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`;
         document.getElementById('prev-btn').disabled = (history.length <= 1);
         clearCanvas(); document.getElementById('answer-display').innerText = ""; document.getElementById('hint-display').innerText = "";
@@ -155,8 +152,7 @@
             return; 
         } 
         let nextIdx = available[Math.floor(Math.random() * available.length)]; 
-        history.push(nextIdx); 
-        renderQuestion(nextIdx); 
+        history.push(nextIdx); renderQuestion(nextIdx); 
     }
     
     function prevQuestion() { if (history.length > 1) { history.pop(); renderQuestion(history[history.length - 1]); } }
@@ -167,30 +163,12 @@
     function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); history=[]; saveProgress(); closeModal(); loadQuestion(); } }
-    function showAnswer() { const el = document.getElementById('answer-display'); el.innerText = el.innerText ? "" : "答え: " + questions[currentIndex].a; }
-    function showHint() { const el = document.getElementById('hint-display'); el.innerText = el.innerText ? "" : "ヒント: " + questions[currentIndex].hint; }
+    function showAnswer() { document.getElementById('answer-display').innerText = "答え: " + questions[currentIndex].a; }
+    function showHint() { document.getElementById('hint-display').innerText = "ヒント: " + questions[currentIndex].hint; }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
     function updatePenSize(s) { ctx.lineWidth = Number(s); localStorage.setItem('penSize', s); }
 
-    let drawing = false;
-    canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); });
-    canvas.addEventListener('mousemove', (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); } });
-    canvas.addEventListener('mouseup', () => drawing = false);
-    
-    // iPad対応タッチイベント
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); }, {passive: false});
-    canvas.addEventListener('touchmove', (e) => { 
-        if(drawing) { 
-            e.preventDefault(); 
-            const r = canvas.getBoundingClientRect(); 
-            ctx.lineTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); 
-            ctx.stroke(); 
-        } 
-    }, {passive: false});
-    canvas.addEventListener('touchend', () => drawing = false);
-    
-    initPen();
-    loadAllData();
+    initPen(); loadAllData();
 </script>
 </body>
 </html>
