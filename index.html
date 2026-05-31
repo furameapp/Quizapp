@@ -14,7 +14,15 @@
         .disabled { opacity: 0.3; pointer-events: none; }
         #game-screen { display: none; flex-direction: column; flex-grow: 1; }
         .question-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 5px; }
-        #question-text-area { font-size: 1.6rem; font-weight: bold; flex-grow: 1; text-align: center; }
+        
+        /* モーション用設定 */
+        #question-text-area { 
+            font-weight: bold; flex-grow: 1; text-align: center; 
+            white-space: nowrap; overflow: hidden; margin: 0 10px;
+            opacity: 0; transform: scale(0.9); 
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, font-size 0.3s ease-out;
+        }
+        
         .canvas-container { height: 35vh; min-height: 200px; width: 100%; border: 2px solid #ccc; background: #fff; border-radius: 8px; touch-action: none; margin: 5px 0; overflow: hidden; }
         #canvas { display: block; touch-action: none; cursor: crosshair; width: 100%; height: 100%; }
         #info-area { height: 60px; font-size: 1.4rem; font-weight: bold; color: #d32f2f; margin: 5px 0; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background: #fdfdfd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -64,64 +72,58 @@
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     let drawing = false;
 
-    function setupCanvas() {
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
-        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        ctx.lineWidth = localStorage.getItem('penSize') || 6;
-    }
-
+    // --- 各種関数 (既存) ---
+    function setupCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = localStorage.getItem('penSize') || 6; }
     canvas.addEventListener('pointerdown', (e) => { drawing = true; ctx.beginPath(); const r = canvas.getBoundingClientRect(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top); });
     window.addEventListener('pointermove', (e) => { if(!drawing) return; const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); });
     window.addEventListener('pointerup', () => drawing = false);
-
     function updatePenSize(s) { ctx.lineWidth = s; localStorage.setItem('penSize', s); }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
-    async function loadAllData() {
-        try {
-            const res = await fetch('https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec');
-            allData = await res.json();
-            document.getElementById('sheet-list').innerHTML = Object.keys(allData).map(s => `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`).join('');
-        } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; }
-    }
-
-    function startPractice(s) {
-        currentSheet = s;
-        questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] }));
-        solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]"));
-        seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]"));
-        history = []; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex';
-        setupCanvas(); loadNextQuestion();
-    }
-
+    async function loadAllData() { try { const res = await fetch('https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec'); allData = await res.json(); document.getElementById('sheet-list').innerHTML = Object.keys(allData).map(s => `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`).join(''); } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; } }
+    function startPractice(s) { currentSheet = s; questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] })); solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]")); seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]")); history = []; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; setupCanvas(); loadNextQuestion(); }
     function loadNextQuestion() { currentIndex = Math.floor(Math.random() * questions.length); history.push(currentIndex); seenIndices.add(currentIndex); saveProgress(); render(); }
     function prevQuestion() { if(history.length > 1) { history.pop(); currentIndex = history[history.length-1]; render(); } }
     
+    // --- モーション付きレンダリング ---
     function render() {
         const q = questions[currentIndex];
         const progressDisplay = document.getElementById('progress-display');
         const questionArea = document.getElementById('question-text-area');
         const actionButtons = document.querySelectorAll('.game-btn:not([onclick*="backToMenu"]):not([onclick*="openModal"])');
 
-        if (solvedIndices.size === questions.length && questions.length > 0) {
-            progressDisplay.innerHTML = `
-                <div style="font-size: 1.5rem; color: #FF9800; font-weight: bold; margin: 20px 0;">🎉 全問制覇おめでとう！ 🎉</div>
-                <button onclick="resetSolved()" style="padding: 15px 30px; font-size: 1.2rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer;">最初からやり直す</button>`;
-            questionArea.style.display = 'none';
-            actionButtons.forEach(btn => btn.classList.add('disabled'));
-        } else {
-            progressDisplay.innerHTML = `正解: ${solvedIndices.size}/${questions.length}`;
-            questionArea.style.display = 'block';
-            actionButtons.forEach(btn => btn.classList.remove('disabled'));
-        }
+        // 一旦表示をリセット
+        questionArea.style.opacity = 0;
+        questionArea.style.transform = "scale(0.9)";
 
-        const probDisplay = (q.prob && q.prob.trim() !== "") 
-            ? `<span style="border-bottom: 2px solid #333; min-width: 40px; display: inline-block; margin: 0 5px;">${q.prob}</span>` 
-            : "";
-        questionArea.innerHTML = `${q.p1}${probDisplay}${q.p2}`;
+        setTimeout(() => {
+            if (solvedIndices.size === questions.length && questions.length > 0) {
+                progressDisplay.innerHTML = `<div style="font-size: 1.5rem; color: #FF9800; font-weight: bold; margin: 20px 0;">🎉 全問制覇おめでとう！ 🎉</div><button onclick="resetSolved()" style="padding: 15px 30px; font-size: 1.2rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer;">最初からやり直す</button>`;
+                questionArea.style.display = 'none';
+                actionButtons.forEach(btn => btn.classList.add('disabled'));
+            } else {
+                progressDisplay.innerHTML = `正解: ${solvedIndices.size}/${questions.length}`;
+                questionArea.style.display = 'block';
+                actionButtons.forEach(btn => btn.classList.remove('disabled'));
+                const probDisplay = (q.prob && q.prob.trim() !== "") ? `<span style="border-bottom: 2px solid #333; min-width: 40px; display: inline-block; margin: 0 5px;">${q.prob}</span>` : "";
+                questionArea.innerHTML = `${q.p1}${probDisplay}${q.p2}`;
+                
+                // サイズ調整と表示
+                adjustFontSize(questionArea);
+                questionArea.style.opacity = 1;
+                questionArea.style.transform = "scale(1)";
+            }
+        }, 50);
+
         document.getElementById('info-area').innerText = "";
         clearCanvas();
+    }
+
+    function adjustFontSize(element) {
+        const len = element.innerText.length;
+        if (len > 15) element.style.fontSize = "0.9rem";
+        else if (len > 10) element.style.fontSize = "1.2rem";
+        else element.style.fontSize = "1.6rem";
     }
 
     function toggleAnswer() { const info = document.getElementById('info-area'); info.style.color = "#d32f2f"; info.innerText = questions[currentIndex].a ? questions[currentIndex].a : "（答えなし）"; }
@@ -133,7 +135,6 @@
     function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); render(); }
     function resetSolved() { if(confirm("全リセットして最初からやり直しますか？")) { solvedIndices.clear(); seenIndices.clear(); localStorage.removeItem('solved_' + currentSheet); localStorage.removeItem('seen_' + currentSheet); closeModal(); loadNextQuestion(); } }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    
     window.onload = () => { loadAllData(); const savedSize = localStorage.getItem('penSize') || 6; document.getElementById('pen-size').value = savedSize; };
 </script>
 </body>
