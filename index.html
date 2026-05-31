@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>漢字練習アプリ</title>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 20px; }
@@ -31,7 +32,11 @@
         #answer-display, #hint-display { height: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #answer-display { color: #d32f2f; } #hint-display { color: #388e3c; }
 
-        .canvas-container { position: relative; width: 600px; height: 150px; margin: 10px auto; border: 2px solid #ccc; background: #fff; touch-action: none; }
+        .canvas-container { 
+            position: relative; width: 600px; height: 150px; margin: 10px auto; 
+            border: 2px solid #ccc; background: #fff; 
+            touch-action: none; -webkit-user-select: none; user-select: none;
+        }
         #canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; }
         
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; overflow-y: auto; }
@@ -134,11 +139,8 @@
         currentIndex = idx; seenIndices.add(idx); saveProgress();
         const q = questions[idx];
         const container = document.getElementById('question-text-area');
-        
-        // 問題部分(prob)が空白の場合、下線クラスを適用しない
         const probSpan = q.prob.trim() ? `<span class="target-char">${q.prob}</span>` : `<span>${q.prob}</span>`;
         container.innerHTML = `<span>${q.p1}</span>${probSpan}<span>${q.p2}</span>`;
-        
         adjustFontSize('question-text-area', (q.p1 + q.prob + q.p2).length);
         document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`;
         document.getElementById('prev-btn').disabled = (history.length <= 1);
@@ -170,7 +172,22 @@
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
     function updatePenSize(s) { ctx.lineWidth = Number(s); localStorage.setItem('penSize', s); }
 
-    let drawing = false; canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); }; canvas.onmousemove = (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); ctx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); ctx.stroke(); } }; canvas.onmouseup = () => drawing = false;
+    let drawing = false;
+    canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); });
+    canvas.addEventListener('mousemove', (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); } });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    
+    // iPad対応タッチイベント
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); }, {passive: false});
+    canvas.addEventListener('touchmove', (e) => { 
+        if(drawing) { 
+            e.preventDefault(); 
+            const r = canvas.getBoundingClientRect(); 
+            ctx.lineTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); 
+            ctx.stroke(); 
+        } 
+    }, {passive: false});
+    canvas.addEventListener('touchend', () => drawing = false);
     
     initPen();
     loadAllData();
