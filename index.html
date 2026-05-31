@@ -19,6 +19,7 @@
         .question-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 10px; }
         #question-text-area { font-weight: bold; flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; margin: 0 10px; transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: scale(0.9); }
         
+        /* 解答欄の縦幅を0.3 (30vh) に固定 */
         .canvas-container { height: 30vh; width: 100%; border: 2px solid #ccc; background: #fff; border-radius: 8px; touch-action: none; margin: 10px 0; overflow: hidden; }
         #canvas { display: block; touch-action: none; cursor: crosshair; width: 100%; height: 100%; }
         
@@ -92,7 +93,6 @@
 
         setTimeout(() => {
             if (solvedIndices.size === questions.length && questions.length > 0) {
-                // ここを修正：文字の下にボタンを配置
                 progressDisplay.innerHTML = `
                     <div style="font-size: 1.5rem; color: #FF9800; font-weight: bold; margin: 10px 0;">🎉 全問制覇！ 🎉</div>
                     <button onclick="resetSolved()" style="padding: 10px 20px; font-size: 1rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer;">最初からやり直す</button>
@@ -103,7 +103,12 @@
                 progressDisplay.innerHTML = `進捗: ${solvedIndices.size} / ${questions.length}`;
                 questionArea.style.display = 'block';
                 actionButtons.forEach(btn => btn.classList.remove('disabled'));
-                const probDisplay = (q.prob && q.prob.trim() !== "") ? `<span style="border-bottom: 2px solid #333; margin: 0 5px;">${q.prob}</span>` : "";
+                
+                // C列の空白チェック
+                const isProbEmpty = !q.prob || q.prob.trim() === "";
+                const probStyle = isProbEmpty ? "" : "border-bottom: 2px solid #333; margin: 0 5px; min-width: 30px; display: inline-block;";
+                const probDisplay = `<span style="${probStyle}">${q.prob || ""}</span>`;
+                
                 questionArea.innerHTML = `${q.p1}${probDisplay}${q.p2}`;
                 adjustFontSize(questionArea);
                 questionArea.style.opacity = 1;
