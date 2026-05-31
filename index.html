@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>漢字練習アプリ</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 10px; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
-        .container { background: white; padding: 20px; border-radius: 15px; width: 95%; max-width: 800px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); box-sizing: border-box; }
+        body { font-family: sans-serif; text-align: center; background: #f9f9f9; padding: 10px; margin: 0; min-height: 100vh; touch-action: none; overflow: hidden; }
+        .container { background: white; padding: 20px; border-radius: 15px; width: 95%; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); box-sizing: border-box; }
         .menu-btn { display: block; width: 90%; margin: 10px auto; padding: 20px; font-size: 1.3rem; cursor: pointer; border-radius: 10px; border: none; background: #607D8B; color: white; }
-        .game-btn { font-size: 1.2rem; padding: 15px 20px; cursor: pointer; margin: 5px; border-radius: 8px; border: none; background-color: #eee; }
+        .game-btn { font-size: 1.1rem; padding: 12px 15px; cursor: pointer; margin: 4px; border-radius: 8px; border: none; background-color: #eee; }
         
-        #game-screen { display: none; }
-        #progress-display { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; color: #555; }
+        .question-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding: 0 5px; }
+        #question-text-area { font-size: 2rem; font-weight: bold; }
+        .target-char { border-bottom: 3px solid #333; min-width: 60px; display: inline-block; margin: 0 5px; }
 
-        .question-header { display: flex; align-items: center; justify-content: center; margin-bottom: 15px; height: 70px; }
-        #question-text-area { font-size: 2rem; font-weight: bold; margin: 0 15px; }
-        .target-char { border-bottom: 3px solid #333; min-width: 60px; display: inline-block; text-align: center; margin: 0 5px; padding-bottom: 2px; }
+        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
+        .pen-settings { display: flex; align-items: center; justify-content: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; }
         
-        .canvas-container { position: relative; width: 100%; height: 40vh; margin: 15px auto; border: 2px solid #ccc; background: #fff; touch-action: none; overflow: hidden; border-radius: 8px; }
-        #canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
-        
+        .canvas-container { position: relative; width: 100%; height: 40vh; margin: 15px auto; border: 2px solid #ccc; background: #fff; border-radius: 8px; touch-action: none; }
+        #canvas { display: block; touch-action: none; cursor: crosshair; }
+        #game-screen { display: none; }
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; overflow-y: auto; }
         .modal-content { background: white; margin: 50px auto; padding: 20px; width: 90%; max-width: 600px; border-radius: 15px; }
     </style>
@@ -33,26 +33,27 @@
     </div>
 
     <div id="game-screen">
-        <div id="progress-display"></div>
+        <div id="progress-display" style="font-weight: bold; margin-bottom: 5px;"></div>
         <div class="question-header">
             <button id="prev-btn" class="game-btn" onclick="prevQuestion()">戻る</button>
             <div id="question-text-area"></div>
-            <button class="game-btn" onclick="loadQuestion()">次へ</button>
+            <button class="game-btn" onclick="loadNextQuestion()">次へ</button>
         </div>
         <div class="canvas-container"><canvas id="canvas"></canvas></div>
-        <div id="answer-display" style="color: #d32f2f; font-weight: bold; height: 35px; font-size: 1.2rem;"></div>
-        <div id="hint-display" style="color: #388e3c; font-weight: bold; height: 35px; font-size: 1.2rem;"></div>
-        <div style="margin-top: 10px;">
+        <div id="answer-display" style="color: #d32f2f; font-weight: bold; height: 30px;"></div>
+        <div id="hint-display" style="color: #388e3c; font-weight: bold; height: 30px;"></div>
+        
+        <div class="btn-group">
             <button class="game-btn" onclick="markAsSolved()" style="background:#4CAF50; color:white;">正解！</button>
-            <button class="game-btn" onclick="showAnswer()">答え</button>
-            <button class="game-btn" onclick="showHint()">ヒント</button>
+            <button class="game-btn" onclick="toggleAnswer()">答え</button>
+            <button class="game-btn" onclick="toggleHint()">ヒント</button>
             <button class="game-btn" onclick="clearCanvas()">消す</button>
             <button class="game-btn" onclick="openModal()" style="background:#2196F3; color:white;">一覧</button>
         </div>
-        <div style="margin-top: 20px;">
-            <label style="font-size: 1.1rem;">ペンの太さ:</label>
-            <input type="range" id="pen-size" min="2" max="20" value="6" oninput="updatePenSize(this.value)" style="transform: scale(1.5); margin: 0 15px;">
-            <button class="game-btn" onclick="backToMenu()" style="background:#607D8B; color:white;">メニューへ</button>
+        <div class="pen-settings">
+            <label>太さ:</label>
+            <input type="range" id="pen-size" min="2" max="20" value="6" style="width: 100px; margin: 0 10px;" oninput="updatePenSize(this.value)">
+            <button class="game-btn" onclick="backToMenu()" style="background:#607D8B; color:white;">メニュー</button>
         </div>
     </div>
 </div>
@@ -60,108 +61,86 @@
 <div id="modal">
     <div class="modal-content">
         <h3>回答一覧</h3>
-        <div id="solved-list" style="text-align: left; max-height: 400px; overflow-y: auto; margin-bottom: 20px; font-size: 1.2rem;"></div>
-        <button onclick="resetSolved()" style="background:#f44336; color:white; padding:15px; font-size:1.1rem;">全リセット</button>
-        <button onclick="closeModal()" style="padding:15px; font-size:1.1rem;">閉じる</button>
+        <div id="solved-list" style="text-align: left; max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
+        <button onclick="resetSolved()" style="background:#f44336; color:white; padding:10px; margin-right: 10px;">全リセット</button>
+        <button onclick="closeModal()" style="padding: 10px;">閉じる</button>
     </div>
 </div>
 
 <script>
-    let allData = {}, currentSheet = "", questions = [], history = [], currentIndex = 0;
-    let solvedIndices = new Set(), seenIndices = new Set();
+    let allData = {}, questions = [], history = [], currentIndex = 0, solvedIndices = new Set(), seenIndices = new Set(), currentSheet = "";
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
-    
-    function resizeCanvas() {
-        const container = canvas.parentElement;
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = Number(localStorage.getItem('penSize') || 6);
-    }
-    window.onresize = resizeCanvas;
-    resizeCanvas();
-
-    function initPen() {
-        const savedSize = localStorage.getItem('penSize') || 6;
-        document.getElementById('pen-size').value = savedSize;
-        ctx.lineWidth = Number(savedSize);
-    }
-
-    function getPointerPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
     let drawing = false;
-    canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(getPointerPos(e).x, getPointerPos(e).y); });
-    canvas.addEventListener('mousemove', (e) => { if(drawing) { const pos = getPointerPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(getPointerPos(e).x, getPointerPos(e).y); }, {passive: false});
-    canvas.addEventListener('touchmove', (e) => { if(drawing) { e.preventDefault(); const pos = getPointerPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } }, {passive: false});
-    canvas.addEventListener('touchend', () => drawing = false);
 
+    // 描画ロジック（確実に動く形式）
+    function setupCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = localStorage.getItem('penSize') || 6;
+    }
+
+    canvas.addEventListener('pointerdown', (e) => { 
+        drawing = true; ctx.beginPath(); 
+        const rect = canvas.getBoundingClientRect();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top); 
+    });
+    window.addEventListener('pointermove', (e) => { 
+        if(!drawing) return; 
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top); 
+        ctx.stroke(); 
+    });
+    window.addEventListener('pointerup', () => drawing = false);
+
+    function updatePenSize(s) { ctx.lineWidth = s; localStorage.setItem('penSize', s); }
+
+    // 機能関数群
     async function loadAllData() {
-        const webAppUrl = 'https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec';
-        const list = document.getElementById('sheet-list');
         try {
-            const res = await fetch(webAppUrl);
+            const res = await fetch('https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec');
             allData = await res.json();
-            list.innerHTML = "";
-            Object.keys(allData).forEach(s => {
-                list.innerHTML += `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`;
-            });
-        } catch(e) { list.innerText = "読み込みエラー"; }
+            document.getElementById('sheet-list').innerHTML = Object.keys(allData).map(s => `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`).join('');
+        } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; }
     }
 
     function startPractice(s) {
         currentSheet = s;
-        questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] || "なし" }));
+        questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] }));
         solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]"));
         seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]"));
-        history = []; document.getElementById('menu-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
-        initPen(); loadQuestion();
+        history = []; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'block';
+        setupCanvas();
+        loadNextQuestion();
     }
 
-    function renderQuestion(idx) {
-        currentIndex = idx; seenIndices.add(idx); saveProgress();
-        const q = questions[idx];
-        const container = document.getElementById('question-text-area');
-        const probSpan = q.prob.trim() ? `<span class="target-char">${q.prob}</span>` : `<span>${q.prob}</span>`;
-        container.innerHTML = `<span>${q.p1}</span>${probSpan}<span>${q.p2}</span>`;
+    function loadNextQuestion() { currentIndex = Math.floor(Math.random() * questions.length); history.push(currentIndex); seenIndices.add(currentIndex); saveProgress(); render(); }
+    function prevQuestion() { if(history.length > 1) { history.pop(); currentIndex = history[history.length-1]; render(); } }
+    function render() {
+        const q = questions[currentIndex];
+        document.getElementById('question-text-area').innerHTML = `${q.p1}<span class="target-char">${q.prob}</span>${q.p2}`;
         document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`;
         document.getElementById('prev-btn').disabled = (history.length <= 1);
         clearCanvas(); document.getElementById('answer-display').innerText = ""; document.getElementById('hint-display').innerText = "";
     }
-
-    function loadQuestion() { 
-        let available = questions.map((_, i) => i).filter(i => !solvedIndices.has(i)); 
-        if (available.length === 0) { 
-            document.getElementById('question-text-area').innerText = "全問制覇！"; 
-            document.getElementById('progress-display').innerText = `正解数: ${questions.length} / ${questions.length} 問`;
-            return; 
-        } 
-        let nextIdx = available[Math.floor(Math.random() * available.length)]; 
-        history.push(nextIdx); renderQuestion(nextIdx); 
-    }
-    
-    function prevQuestion() { if (history.length > 1) { history.pop(); renderQuestion(history[history.length - 1]); } }
     function saveProgress() { localStorage.setItem('solved_' + currentSheet, JSON.stringify([...solvedIndices])); localStorage.setItem('seen_' + currentSheet, JSON.stringify([...seenIndices])); }
-    function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
-    function markAsSolved() { solvedIndices.add(currentIndex); saveProgress(); loadQuestion(); }
-    function openModal() { const list = document.getElementById('solved-list'); list.innerHTML = ""; questions.forEach((q, i) => { if(seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i)?"checked":""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}${q.prob}${q.p2}</div>`; } }); document.getElementById('modal').style.display = 'block'; }
-    function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); document.getElementById('progress-display').innerText = `正解数: ${solvedIndices.size} / ${questions.length} 問`; }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); history=[]; saveProgress(); closeModal(); loadQuestion(); } }
-    function showAnswer() { document.getElementById('answer-display').innerText = "答え: " + questions[currentIndex].a; }
-    function showHint() { document.getElementById('hint-display').innerText = "ヒント: " + questions[currentIndex].hint; }
+    function toggleAnswer() { const d = document.getElementById('answer-display'); d.innerText = d.innerText ? "" : "答え: " + questions[currentIndex].a; }
+    function toggleHint() { const d = document.getElementById('hint-display'); d.innerText = d.innerText ? "" : "ヒント: " + questions[currentIndex].hint; }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    function updatePenSize(s) { ctx.lineWidth = Number(s); localStorage.setItem('penSize', s); }
+    function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
+    function markAsSolved() { solvedIndices.add(currentIndex); saveProgress(); loadNextQuestion(); }
+    function openModal() {
+        const list = document.getElementById('solved-list');
+        list.innerHTML = "";
+        questions.forEach((q, i) => { if (seenIndices.has(i)) { list.innerHTML += `<div><input type="checkbox" ${solvedIndices.has(i) ? "checked" : ""} onchange="toggleSolved(${i}, this.checked)"> ${q.p1}${q.prob}${q.p2}</div>`; } });
+        document.getElementById('modal').style.display = 'block';
+    }
+    function toggleSolved(i, isChecked) { if (isChecked) solvedIndices.add(i); else solvedIndices.delete(i); saveProgress(); render(); }
+    function resetSolved() { if(confirm("全リセットしますか？")) { solvedIndices.clear(); seenIndices.clear(); localStorage.removeItem('solved_' + currentSheet); localStorage.removeItem('seen_' + currentSheet); closeModal(); loadNextQuestion(); } }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    initPen(); loadAllData();
+    window.onload = loadAllData;
 </script>
 </body>
 </html>
