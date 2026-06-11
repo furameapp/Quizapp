@@ -18,12 +18,15 @@
         #game-screen { display: none; }
         .question-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 10px; }
         
-        #question-text-area { font-weight: bold; flex-grow: 1; text-align: center; margin: 0 10px; transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: scale(0.9); word-break: break-all; line-height: 1.4; }
+        .text-area-common { word-break: break-all; line-height: 1.4; transition: opacity 0.3s, transform 0.3s; }
+        
+        #question-text-area { font-weight: bold; flex-grow: 1; text-align: center; margin: 0 10px; opacity: 0; transform: scale(0.9); }
         
         .canvas-container { height: 30vh; width: 100%; border: 2px solid #ccc; background: #fff; border-radius: 8px; touch-action: none; margin: 10px 0; overflow: hidden; }
         #canvas { display: block; touch-action: none; cursor: crosshair; width: 100%; height: 100%; }
         
-        #info-area { min-height: 50px; font-size: 1.4rem; font-weight: bold; margin: 5px 0; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background: #fdfdfd; display: flex; align-items: center; justify-content: center; }
+        #info-area { min-height: 50px; font-weight: bold; margin: 5px 0; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background: #fdfdfd; display: flex; align-items: center; justify-content: center; }
+        
         .pen-settings { display: flex; align-items: center; justify-content: center; margin-top: 5px; font-size: 0.9rem; gap: 10px; }
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; overflow-y: auto; }
         .modal-content { background: white; margin: 20px auto; padding: 15px; width: 90%; max-width: 600px; border-radius: 15px; }
@@ -39,11 +42,11 @@
         <div id="progress-display" style="min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.1rem;"></div>
         <div class="question-header">
             <button class="header-btn" onclick="prevQuestion()">戻る</button>
-            <div id="question-text-area"></div>
+            <div id="question-text-area" class="text-area-common"></div>
             <button class="header-btn" onclick="loadNextQuestion()">次へ</button>
         </div>
         <div class="canvas-container"><canvas id="canvas"></canvas></div>
-        <div id="info-area"></div>
+        <div id="info-area" class="text-area-common"></div>
         <div class="btn-group">
             <button class="game-btn" onclick="markAsSolved()" style="background:#4CAF50; color:white;">正解</button>
             <button class="game-btn" onclick="toggleAnswer()">答</button>
@@ -70,27 +73,37 @@
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     let drawing = false;
 
-    function setupCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = localStorage.getItem('penSize') || 6; }
+    // キャンバス設定（ペンの太さ読み込み含む）
+    function setupCanvas() { 
+        canvas.width = canvas.parentElement.clientWidth; 
+        canvas.height = canvas.parentElement.clientHeight; 
+        ctx.lineCap = 'round'; 
+        ctx.lineJoin = 'round'; 
+        const savedSize = localStorage.getItem('penSize') || 6;
+        ctx.lineWidth = savedSize; 
+        document.getElementById('pen-size').value = savedSize;
+    }
+
     canvas.addEventListener('pointerdown', (e) => { drawing = true; ctx.beginPath(); const r = canvas.getBoundingClientRect(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top); });
     window.addEventListener('pointermove', (e) => { if(!drawing) return; const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); });
     window.addEventListener('pointerup', () => drawing = false);
-    function updatePenSize(s) { ctx.lineWidth = s; localStorage.setItem('penSize', s); }
+
+    // ペンの太さ更新用
+    function updatePenSize(s) { 
+        ctx.lineWidth = s; 
+        localStorage.setItem('penSize', s); 
+    }
+
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
     async function loadAllData() { try { const res = await fetch('https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec'); allData = await res.json(); document.getElementById('sheet-list').innerHTML = Object.keys(allData).map(s => `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`).join(''); } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; } }
+    
     function startPractice(s) { currentSheet = s; questions = allData[s].map(r => ({ p1: r[1], prob: r[2], p2: r[3], a: r[4], hint: r[5] })); solvedIndices = new Set(JSON.parse(localStorage.getItem('solved_' + s) || "[]")); seenIndices = new Set(JSON.parse(localStorage.getItem('seen_' + s) || "[]")); history = []; document.getElementById('menu-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'block'; setupCanvas(); loadNextQuestion(); }
     
-    // 修正箇所：未解答の問題のみを抽出してランダムに選ぶ
     function loadNextQuestion() {
         const unSolved = questions.map((_, i) => i).filter(i => !solvedIndices.has(i));
-        if (unSolved.length === 0) {
-            currentIndex = -1; // 全問終了フラグ
-        } else {
-            currentIndex = unSolved[Math.floor(Math.random() * unSolved.length)];
-            history.push(currentIndex);
-            seenIndices.add(currentIndex);
-            saveProgress();
-        }
+        if (unSolved.length === 0) { currentIndex = -1; } 
+        else { currentIndex = unSolved[Math.floor(Math.random() * unSolved.length)]; history.push(currentIndex); seenIndices.add(currentIndex); saveProgress(); }
         render();
     }
     
@@ -117,10 +130,9 @@
                 
                 const isProbEmpty = !q.prob || q.prob.trim() === "";
                 const probStyle = isProbEmpty ? "" : "border-bottom: 2px solid #333; margin: 0 5px; min-width: 30px; display: inline-block;";
-                const probDisplay = `<span style="${probStyle}">${q.prob || ""}</span>`;
+                questionArea.innerHTML = `${q.p1}<span style="${probStyle}">${q.prob || ""}</span>${q.p2}`;
                 
-                questionArea.innerHTML = `${q.p1}${probDisplay}${q.p2}`;
-                adjustFontSize(questionArea);
+                adjustFontSize(questionArea, 1.6);
                 questionArea.style.opacity = 1;
                 questionArea.style.transform = "scale(1)";
             }
@@ -129,15 +141,15 @@
         clearCanvas();
     }
     
-    function adjustFontSize(e) {
-        e.style.fontSize = "1.6rem";
-        const l = e.innerText.length;
-        if (l > 25) e.style.fontSize = "0.9rem";
-        else if (l > 15) e.style.fontSize = "1.2rem";
+    function adjustFontSize(el, baseSize) {
+        el.style.fontSize = baseSize + "rem";
+        const l = el.innerText.length;
+        if (l > 30) el.style.fontSize = (baseSize * 0.5) + "rem";
+        else if (l > 20) el.style.fontSize = (baseSize * 0.7) + "rem";
     }
     
-    function toggleAnswer() { const info = document.getElementById('info-area'); info.style.color = "#d32f2f"; info.innerText = questions[currentIndex].a || "（答えなし）"; }
-    function toggleHint() { const info = document.getElementById('info-area'); info.style.color = "#388e3c"; info.innerText = questions[currentIndex].hint || "（ヒントなし）"; }
+    function toggleAnswer() { const info = document.getElementById('info-area'); info.style.color = "#d32f2f"; info.innerText = questions[currentIndex].a || "（答えなし）"; adjustFontSize(info, 1.4); }
+    function toggleHint() { const info = document.getElementById('info-area'); info.style.color = "#388e3c"; info.innerText = questions[currentIndex].hint || "（ヒントなし）"; adjustFontSize(info, 1.4); }
     
     function saveProgress() { localStorage.setItem('solved_' + currentSheet, JSON.stringify([...solvedIndices])); localStorage.setItem('seen_' + currentSheet, JSON.stringify([...seenIndices])); }
     function backToMenu() { document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'block'; }
