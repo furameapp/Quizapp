@@ -17,9 +17,10 @@
         
         #game-screen { display: none; }
         .question-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 10px; }
-        #question-text-area { font-weight: bold; flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; margin: 0 10px; transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: scale(0.9); }
         
-        /* 解答欄の縦幅を0.3 (30vh) に固定 */
+        /* 修正箇所：折り返し設定と行間調整 */
+        #question-text-area { font-weight: bold; flex-grow: 1; text-align: center; margin: 0 10px; transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: scale(0.9); word-break: break-all; line-height: 1.4; }
+        
         .canvas-container { height: 30vh; width: 100%; border: 2px solid #ccc; background: #fff; border-radius: 8px; touch-action: none; margin: 10px 0; overflow: hidden; }
         #canvas { display: block; touch-action: none; cursor: crosshair; width: 100%; height: 100%; }
         
@@ -104,7 +105,6 @@
                 questionArea.style.display = 'block';
                 actionButtons.forEach(btn => btn.classList.remove('disabled'));
                 
-                // C列の空白チェック
                 const isProbEmpty = !q.prob || q.prob.trim() === "";
                 const probStyle = isProbEmpty ? "" : "border-bottom: 2px solid #333; margin: 0 5px; min-width: 30px; display: inline-block;";
                 const probDisplay = `<span style="${probStyle}">${q.prob || ""}</span>`;
@@ -118,7 +118,14 @@
         document.getElementById('info-area').innerText = "";
         clearCanvas();
     }
-    function adjustFontSize(e) { const l = e.innerText.length; e.style.fontSize = l > 15 ? "0.9rem" : l > 10 ? "1.2rem" : "1.6rem"; }
+    
+    // 修正箇所：文字数に応じたフォントサイズ調整を更新
+    function adjustFontSize(e) {
+        e.style.fontSize = "1.6rem";
+        const l = e.innerText.length;
+        if (l > 25) e.style.fontSize = "0.9rem";
+        else if (l > 15) e.style.fontSize = "1.2rem";
+    }
     
     function toggleAnswer() { const info = document.getElementById('info-area'); info.style.color = "#d32f2f"; info.innerText = questions[currentIndex].a || "（答えなし）"; }
     function toggleHint() { const info = document.getElementById('info-area'); info.style.color = "#388e3c"; info.innerText = questions[currentIndex].hint || "（ヒントなし）"; }
