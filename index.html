@@ -73,7 +73,6 @@
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     let drawing = false;
 
-    // キャンバス設定（ペンの太さ読み込み含む）
     function setupCanvas() { 
         canvas.width = canvas.parentElement.clientWidth; 
         canvas.height = canvas.parentElement.clientHeight; 
@@ -88,12 +87,7 @@
     window.addEventListener('pointermove', (e) => { if(!drawing) return; const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); });
     window.addEventListener('pointerup', () => drawing = false);
 
-    // ペンの太さ更新用
-    function updatePenSize(s) { 
-        ctx.lineWidth = s; 
-        localStorage.setItem('penSize', s); 
-    }
-
+    function updatePenSize(s) { ctx.lineWidth = s; localStorage.setItem('penSize', s); }
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
     async function loadAllData() { try { const res = await fetch('https://script.google.com/macros/s/AKfycbzG2yFoyxvc4Yl00i_wlkxKl6J2uOVnzpflxBO64W59X8n4t2Z4MNU99ACpEX0nrGY/exec'); allData = await res.json(); document.getElementById('sheet-list').innerHTML = Object.keys(allData).map(s => `<button class="menu-btn" onclick="startPractice('${s}')">${s}</button>`).join(''); } catch(e) { document.getElementById('sheet-list').innerText = "読み込みエラー"; } }
@@ -102,8 +96,21 @@
     
     function loadNextQuestion() {
         const unSolved = questions.map((_, i) => i).filter(i => !solvedIndices.has(i));
-        if (unSolved.length === 0) { currentIndex = -1; } 
-        else { currentIndex = unSolved[Math.floor(Math.random() * unSolved.length)]; history.push(currentIndex); seenIndices.add(currentIndex); saveProgress(); }
+        
+        if (unSolved.length === 0) {
+            currentIndex = -1;
+        } else if (unSolved.length === 1) {
+            currentIndex = unSolved[0];
+        } else {
+            let candidates = unSolved.filter(i => i !== currentIndex);
+            currentIndex = candidates[Math.floor(Math.random() * candidates.length)];
+        }
+        
+        if (currentIndex !== -1) {
+            history.push(currentIndex);
+            seenIndices.add(currentIndex);
+            saveProgress();
+        }
         render();
     }
     
@@ -119,7 +126,10 @@
 
         setTimeout(() => {
             if (currentIndex === -1) {
-                progressDisplay.innerHTML = `<div style="font-size: 1.5rem; color: #FF9800; font-weight: bold; margin: 10px 0;">🎉 全問制覇！ 🎉</div>`;
+                progressDisplay.innerHTML = `
+                    <div style="font-size: 1.5rem; color: #FF9800; font-weight: bold; margin: 10px 0;">🎉 全問制覇！ 🎉</div>
+                    <button onclick="resetSolved()" style="padding: 10px 20px; font-size: 1rem; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">最初からやり直す</button>
+                `;
                 questionArea.style.display = 'none';
                 actionButtons.forEach(btn => btn.classList.add('disabled'));
             } else {
